@@ -111,4 +111,5 @@ CREATE UNIQUE NONCLUSTERED INDEX IX_Customers_Tenant_Email ON Customers(TenantId
 CREATE UNIQUE NONCLUSTERED INDEX IX_Orders_Tenant_Date ON Orders(TenantId, CreatedAt DESC);
 CREATE UNIQUE NONCLUSTERED INDEX IX_Orders_Customer ON Orders(TenantId, CustomerId);
 
-CREATE UNIQUE NONCLUSTERED INDEX IX_OrderItems_Tenant_Order ON OrderItems(TenantId, OrderId);
+CREATE NONCLUSTERED INDEX IX_OrderItems_Tenant_Order ON OrderItems (TenantId, OrderId)
+INCLUDE (ProductId, ProductName, Quantity, UnitPrice, Total);
