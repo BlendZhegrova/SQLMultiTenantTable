@@ -44,7 +44,8 @@ CREATE TABLE Products (
     SubscriptionInterval INT NULL,
     IsActive BIT DEFAULT 1,
     CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
-    CONSTRAINT FK_Products_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId)
+    CONSTRAINT FK_Products_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId),
+	CONSTRAINT FK_Products_Form FOREIGN KEY (FormId) REFERENCES Forms(FormId)
 );
 
 CREATE TABLE Forms (
@@ -98,18 +99,18 @@ CREATE TABLE OrderItems (
     CONSTRAINT FK_OrderItems_Product FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
 );
 
-CREATE UNIQUE NONCLUSTERED INDEX IX_Categories_Tenant_Parent ON Categories(TenantId, ParentCategoryId);
+CREATE NONCLUSTERED INDEX IX_Categories_Tenant_Parent ON Categories(TenantId, ParentCategoryId);
 CREATE UNIQUE NONCLUSTERED INDEX IX_Categories_Slug ON Categories(TenantId, Slug);
 
-CREATE UNIQUE NONCLUSTERED INDEX IX_Products_Tenant_Created ON Products(TenantId, CreatedAt DESC);
+CREATE NONCLUSTERED INDEX IX_Products_Tenant_Created ON Products(TenantId, CreatedAt DESC);
 CREATE UNIQUE NONCLUSTERED INDEX IX_Products_SKU ON Products(TenantId, SKU);
 
 CREATE UNIQUE NONCLUSTERED INDEX IX_Map_Tenant_Category ON ProductCategoryMap(TenantId, CategoryId, ProductId);
 
 CREATE UNIQUE NONCLUSTERED INDEX IX_Customers_Tenant_Email ON Customers(TenantId, Email);
 
-CREATE UNIQUE NONCLUSTERED INDEX IX_Orders_Tenant_Date ON Orders(TenantId, CreatedAt DESC);
-CREATE UNIQUE NONCLUSTERED INDEX IX_Orders_Customer ON Orders(TenantId, CustomerId);
+CREATE NONCLUSTERED INDEX IX_Orders_Tenant_Date ON Orders(TenantId, CreatedAt DESC);
+CREATE NONCLUSTERED INDEX IX_Orders_Customer ON Orders(TenantId, CustomerId);
 
 CREATE NONCLUSTERED INDEX IX_OrderItems_Tenant_Order ON OrderItems (TenantId, OrderId)
-INCLUDE (ProductId, ProductName, Quantity, UnitPrice, Total);
+INCLUDE (ProductId, ProductName, Quantity, UnitPrice, Total); --Covering Index.
