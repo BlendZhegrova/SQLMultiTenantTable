@@ -13,12 +13,12 @@ CREATE TABLE Tenants (
     TenantId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     Name NVARCHAR(100) NOT NULL,
     Domain NVARCHAR(200) NOT NULL UNIQUE,
-    SettingsJson NVARCHAR(MAX), 
-    StripeAccountId NVARCHAR(100),
+    StripeAccountId NVARCHAR(100), 
     IsPaymentConfigured BIT DEFAULT 0,
     IsActive BIT DEFAULT 1,
     CreatedAt DATETIME2 DEFAULT GETUTCDATE()
 );
+
 CREATE TABLE TenantProfiles (
     ProfileId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     TenantId UNIQUEIDENTIFIER NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE TenantProfiles (
     LogoUrl NVARCHAR(500),
     FaviconUrl NVARCHAR(500),
     PrimaryColor NVARCHAR(20),      
-    SecondaryColor NVARCHAR(20),    
+    SecondaryColor NVARCHAR(20),
     CONSTRAINT FK_Profiles_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId)
 );
 CREATE UNIQUE NONCLUSTERED INDEX IX_Profiles_Tenant ON TenantProfiles(TenantId);
@@ -52,14 +52,13 @@ CREATE TABLE TenantAddresses (
 CREATE TABLE TenantContentBlocks (
     BlockId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     TenantId UNIQUEIDENTIFIER NOT NULL,
-    SectionName NVARCHAR(100) NOT NULL,
-    BlockKey NVARCHAR(100) NOT NULL,  
+    SectionName NVARCHAR(100) NOT NULL, 
+    BlockKey NVARCHAR(100) NOT NULL,    
     ContentType NVARCHAR(50) NOT NULL,  
     ContentValue NVARCHAR(MAX),        
     SortOrder INT DEFAULT 0,
     CONSTRAINT FK_Content_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId)
 );
-
 CREATE NONCLUSTERED INDEX IX_Content_Lookup ON TenantContentBlocks(TenantId, SectionName);
 
 CREATE TABLE TenantUsers (
@@ -69,12 +68,23 @@ CREATE TABLE TenantUsers (
     PasswordHash NVARCHAR(500) NOT NULL,
     FirstName NVARCHAR(100),
     LastName NVARCHAR(100),
-    Role NVARCHAR(50) NOT NULL,
+    Role NVARCHAR(50) NOT NULL, 
     IsActive BIT DEFAULT 1,
     CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
     CONSTRAINT FK_TenantUsers_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId)
 );
 CREATE UNIQUE NONCLUSTERED INDEX IX_TenantUsers_Email ON TenantUsers(TenantId, Email);
+
+CREATE TABLE ProviderLicenses (
+    LicenseId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    TenantId UNIQUEIDENTIFIER NOT NULL,
+    UserId UNIQUEIDENTIFIER NOT NULL,
+    StateCode NVARCHAR(2) NOT NULL,
+    LicenseNumber NVARCHAR(100) NOT NULL,
+    ExpiryDate DATETIME2 NULL,
+    CONSTRAINT FK_Licenses_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId),
+    CONSTRAINT FK_Licenses_User FOREIGN KEY (UserId) REFERENCES TenantUsers(UserId)
+);
 
 CREATE TABLE Customers (
     CustomerId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
@@ -84,7 +94,7 @@ CREATE TABLE Customers (
     FirstName NVARCHAR(100),
     LastName NVARCHAR(100),
     Phone NVARCHAR(20),
-    ExternalPaymentId NVARCHAR(200),
+    ExternalPaymentId NVARCHAR(200), 
     IsActive BIT DEFAULT 1,
     CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
     CONSTRAINT FK_Customers_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId)
@@ -94,7 +104,7 @@ CREATE UNIQUE NONCLUSTERED INDEX IX_Customers_Tenant_Email ON Customers(TenantId
 CREATE TABLE Categories (
     CategoryId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     TenantId UNIQUEIDENTIFIER NOT NULL,
-    ParentCategoryId UNIQUEIDENTIFIER NULL,
+    ParentCategoryId UNIQUEIDENTIFIER NULL, 
     Name NVARCHAR(100) NOT NULL,
     Slug NVARCHAR(100) NOT NULL,
     SortOrder INT DEFAULT 0,
@@ -113,8 +123,6 @@ CREATE TABLE Products (
     Description NVARCHAR(MAX),
     BasePrice DECIMAL(18, 2) NOT NULL,
     StockQuantity INT DEFAULT 0,
-    ImagesJson NVARCHAR(MAX),
-    AttributesJson NVARCHAR(MAX),
     IsSubscription BIT DEFAULT 0,
     SubscriptionInterval INT NULL,
     IsActive BIT DEFAULT 1,
@@ -123,6 +131,27 @@ CREATE TABLE Products (
 );
 CREATE UNIQUE NONCLUSTERED INDEX IX_Products_SKU ON Products(TenantId, SKU);
 CREATE NONCLUSTERED INDEX IX_Products_Tenant_Created ON Products(TenantId, CreatedAt DESC);
+
+CREATE TABLE ProductImages (
+    ImageId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    TenantId UNIQUEIDENTIFIER NOT NULL,
+    ProductId UNIQUEIDENTIFIER NOT NULL,
+    ImageUrl NVARCHAR(500) NOT NULL,
+    AltText NVARCHAR(200),
+    SortOrder INT DEFAULT 0,
+    CONSTRAINT FK_Images_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId),
+    CONSTRAINT FK_Images_Product FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
+);
+
+CREATE TABLE ProductAttributes (
+    AttributeId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    TenantId UNIQUEIDENTIFIER NOT NULL,
+    ProductId UNIQUEIDENTIFIER NOT NULL,
+    AttributeName NVARCHAR(100) NOT NULL,
+    AttributeValue NVARCHAR(200) NOT NULL,
+    CONSTRAINT FK_Attributes_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId),
+    CONSTRAINT FK_Attributes_Product FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
+);
 
 CREATE TABLE ProductCategoryMap (
     MapId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
@@ -149,7 +178,7 @@ CREATE TABLE FormQuestions (
     TenantId UNIQUEIDENTIFIER NOT NULL,
     FormId UNIQUEIDENTIFIER NOT NULL,
     QuestionText NVARCHAR(500) NOT NULL,
-    InputType NVARCHAR(50) NOT NULL,
+    InputType NVARCHAR(50) NOT NULL, 
     SortOrder INT DEFAULT 0,
     PageNumber INT DEFAULT 1,
     VisibilityParentQuestionId UNIQUEIDENTIFIER NULL, 
@@ -169,7 +198,10 @@ CREATE TABLE FormQuestionOptions (
     CONSTRAINT FK_Options_Question FOREIGN KEY (QuestionId) REFERENCES FormQuestions(QuestionId),
     CONSTRAINT FK_Options_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId)
 );
-ALTER TABLE FormQuestions ADD CONSTRAINT FK_Questions_Logic_Option FOREIGN KEY (VisibilityRequiredOptionId) REFERENCES FormQuestionOptions(OptionId);
+
+ALTER TABLE FormQuestions 
+ADD CONSTRAINT FK_Questions_Logic_Option 
+FOREIGN KEY (VisibilityRequiredOptionId) REFERENCES FormQuestionOptions(OptionId);
 
 CREATE TABLE ProductFormMap (
     MapId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
@@ -195,51 +227,60 @@ CREATE TABLE Orders (
     OrderId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     TenantId UNIQUEIDENTIFIER NOT NULL,
     CustomerId UNIQUEIDENTIFIER NOT NULL,
-
-    Currency NVARCHAR(10) DEFAULT 'USD',        
+    
+    Currency NVARCHAR(10) DEFAULT 'USD',
     Subtotal DECIMAL(18, 2) NOT NULL,
-    TaxAmount DECIMAL(18, 2) DEFAULT 0.00,     
-    DiscountAmount DECIMAL(18, 2) DEFAULT 0.00, 
+    TaxAmount DECIMAL(18, 2) DEFAULT 0.00,
+    DiscountAmount DECIMAL(18, 2) DEFAULT 0.00,
     Total DECIMAL(18, 2) NOT NULL,
     
     PaymentGatewayTransactionId NVARCHAR(200), 
-    PaymentMethodType NVARCHAR(50),            
+    PaymentMethodType NVARCHAR(50),          
+    
     OrderStatus NVARCHAR(50) DEFAULT 'Open',                
     PaymentStatus NVARCHAR(50) DEFAULT 'Pending',           
     FulfillmentStatus NVARCHAR(50) DEFAULT 'Unfulfilled',   
-    ShippingAddressJson NVARCHAR(MAX),
-    IntakeAnswersJson NVARCHAR(MAX),
     PaidAt DATETIME2 NULL,
     ShippedAt DATETIME2 NULL,
     CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
+    
     AppliedDiscountCode NVARCHAR(50),
 
     CONSTRAINT FK_Orders_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId),
     CONSTRAINT FK_Orders_Customer FOREIGN KEY (CustomerId) REFERENCES Customers(CustomerId)
 );
+CREATE NONCLUSTERED INDEX IX_Orders_Tenant_Date ON Orders(TenantId, CreatedAt DESC);
 
-CREATE TABLE OrderTransactions (
-    TransactionId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+CREATE TABLE OrderAddresses (
+    AddressId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     TenantId UNIQUEIDENTIFIER NOT NULL,
     OrderId UNIQUEIDENTIFIER NOT NULL,
-    
-    GatewayResponseJson NVARCHAR(MAX),
-    PaymentGatewayTransactionId NVARCHAR(200),  
-    
-    Type NVARCHAR(50) NOT NULL,    
-    Amount DECIMAL(18, 2) NOT NULL, 
-    Currency NVARCHAR(10) DEFAULT 'USD',
-    
-    Status NVARCHAR(50) NOT NULL,  
-    ErrorMessage NVARCHAR(500),    
-    
-    CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
-    
-    CONSTRAINT FK_Transactions_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId),
-    CONSTRAINT FK_Transactions_Order FOREIGN KEY (OrderId) REFERENCES Orders(OrderId)
+    Type NVARCHAR(50) NOT NULL,
+    FirstName NVARCHAR(100),
+    LastName NVARCHAR(100),
+    AddressLine1 NVARCHAR(200),
+    AddressLine2 NVARCHAR(200),
+    City NVARCHAR(100),
+    State NVARCHAR(100),
+    ZipCode NVARCHAR(20),
+    Country NVARCHAR(100),
+    CONSTRAINT FK_OrderAddress_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId),
+    CONSTRAINT FK_OrderAddress_Order FOREIGN KEY (OrderId) REFERENCES Orders(OrderId)
 );
 
-CREATE NONCLUSTERED INDEX IX_Transactions_Order ON OrderTransactions(TenantId, OrderId);
+CREATE TABLE OrderIntakeAnswers (
+    AnswerId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    TenantId UNIQUEIDENTIFIER NOT NULL,
+    OrderId UNIQUEIDENTIFIER NOT NULL,
+    QuestionId UNIQUEIDENTIFIER NOT NULL,
+    SelectedOptionId UNIQUEIDENTIFIER NULL, 
+    TextValue NVARCHAR(MAX), 
+    CONSTRAINT FK_OrderAnswers_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId),
+    CONSTRAINT FK_OrderAnswers_Order FOREIGN KEY (OrderId) REFERENCES Orders(OrderId),
+    CONSTRAINT FK_OrderAnswers_Question FOREIGN KEY (QuestionId) REFERENCES FormQuestions(QuestionId),
+    CONSTRAINT FK_OrderAnswers_Option FOREIGN KEY (SelectedOptionId) REFERENCES FormQuestionOptions(OptionId)
+);
+CREATE NONCLUSTERED INDEX IX_OrderAnswers_Lookup ON OrderIntakeAnswers(TenantId, OrderId);
 
 CREATE TABLE Discounts (
     DiscountId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
@@ -256,8 +297,6 @@ CREATE TABLE Discounts (
     CONSTRAINT FK_Discounts_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId)
 );
 CREATE UNIQUE NONCLUSTERED INDEX IX_Discounts_Code ON Discounts(TenantId, Code);
-CREATE NONCLUSTERED INDEX IX_Orders_Tenant_Date ON Orders(TenantId, CreatedAt DESC);
-CREATE NONCLUSTERED INDEX IX_Orders_Customer ON Orders(TenantId, CustomerId);
 
 CREATE TABLE OrderItems (
     OrderItemId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
@@ -275,6 +314,23 @@ CREATE TABLE OrderItems (
 CREATE NONCLUSTERED INDEX IX_OrderItems_Tenant_Order ON OrderItems (TenantId, OrderId)
 INCLUDE (ProductId, ProductName, Quantity, UnitPrice, Total);
 
+CREATE TABLE OrderTransactions (
+    TransactionId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    TenantId UNIQUEIDENTIFIER NOT NULL,
+    OrderId UNIQUEIDENTIFIER NOT NULL,
+    GatewayResponseJson NVARCHAR(MAX),
+    PaymentGatewayTransactionId NVARCHAR(200),  
+    Type NVARCHAR(50) NOT NULL,    
+    Amount DECIMAL(18, 2) NOT NULL, 
+    Currency NVARCHAR(10) DEFAULT 'USD',
+    Status NVARCHAR(50) NOT NULL,  
+    ErrorMessage NVARCHAR(500),    
+    CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
+    CONSTRAINT FK_Transactions_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId),
+    CONSTRAINT FK_Transactions_Order FOREIGN KEY (OrderId) REFERENCES Orders(OrderId)
+);
+CREATE NONCLUSTERED INDEX IX_Transactions_Order ON OrderTransactions(TenantId, OrderId);
+
 CREATE TABLE Faqs (
     FaqId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     TenantId UNIQUEIDENTIFIER NOT NULL,
@@ -286,3 +342,39 @@ CREATE TABLE Faqs (
     CONSTRAINT FK_Faqs_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId)
 );
 CREATE NONCLUSTERED INDEX IX_Faqs_Tenant ON Faqs(TenantId);
+
+CREATE TABLE CustomerSubscriptions (
+    SubscriptionId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    TenantId UNIQUEIDENTIFIER NOT NULL,
+    CustomerId UNIQUEIDENTIFIER NOT NULL,
+    ProductId UNIQUEIDENTIFIER NOT NULL,
+    ExternalSubscriptionId NVARCHAR(200), 
+    Status NVARCHAR(50) NOT NULL, 
+    CurrentPeriodStart DATETIME2,
+    CurrentPeriodEnd DATETIME2,   
+    NextBillingDate DATETIME2,    
+    CanceledAt DATETIME2,         
+    CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
+    CONSTRAINT FK_Subs_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId),
+    CONSTRAINT FK_Subs_Customer FOREIGN KEY (CustomerId) REFERENCES Customers(CustomerId),
+    CONSTRAINT FK_Subs_Product FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
+);
+CREATE NONCLUSTERED INDEX IX_Subs_Billing ON CustomerSubscriptions(TenantId, Status, NextBillingDate);
+
+CREATE TABLE Carts (
+    CartId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    TenantId UNIQUEIDENTIFIER NOT NULL,
+    CustomerId UNIQUEIDENTIFIER NULL, 
+    GuestSessionId NVARCHAR(100) NULL, 
+    ExpiresAt DATETIME2 NOT NULL,     
+    UpdatedAt DATETIME2 DEFAULT GETUTCDATE(),
+    CONSTRAINT FK_Carts_Tenant FOREIGN KEY (TenantId) REFERENCES Tenants(TenantId)
+);
+CREATE TABLE CartItems (
+    CartItemId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    CartId UNIQUEIDENTIFIER NOT NULL,
+    ProductId UNIQUEIDENTIFIER NOT NULL,
+    Quantity INT DEFAULT 1,
+    CONSTRAINT FK_CartItems_Cart FOREIGN KEY (CartId) REFERENCES Carts(CartId),
+    CONSTRAINT FK_CartItems_Product FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
+);
